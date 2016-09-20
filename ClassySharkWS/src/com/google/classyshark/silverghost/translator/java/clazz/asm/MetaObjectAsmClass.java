@@ -34,11 +34,10 @@ public class MetaObjectAsmClass extends MetaObject {
 
     public MetaObjectAsmClass(String className, File archiveFile) {
 
-        String classFileName = className + ".class";
         try {
             byte[] bytes =
-                    ClassBytesFromJarExtractor.getBytes(classFileName,
-                            archiveFile.getAbsolutePath());
+                    ClassFromJarExtractor.getBytes(className,
+                            archiveFile.getAbsolutePath(), "class");
 
             classDetailsFiller = new ClassDetailsFiller();
             ClassReader cr = new ClassReader(bytes);

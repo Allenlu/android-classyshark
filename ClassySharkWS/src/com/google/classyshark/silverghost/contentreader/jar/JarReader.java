@@ -81,7 +81,7 @@ public class JarReader implements BinaryContentReader {
 
             jarEntryName = jarEntry.getName();
 
-            if (jarEntryName.endsWith(".class")) {
+            if (jarEntryName.endsWith(".class") || (jarEntryName.endsWith(".jayce"))) {
                 formattedClassName = jarEntryName.replaceAll("/", "\\.");
                 formattedClassName =
                         formattedClassName.substring(0, formattedClassName.lastIndexOf('.'));

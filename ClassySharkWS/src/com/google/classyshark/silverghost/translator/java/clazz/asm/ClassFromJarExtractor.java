@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google, Inc.
+ * Copyright 2016 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.google.classyshark.silverghost.translator.java.clazz.asm;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
@@ -28,18 +30,40 @@ import java.util.jar.JarFile;
  * based on
  * http://stackoverflow.com/questions/31482847/read-bytes-from-a-class-file-within-a-jar-file
  */
-public class ClassBytesFromJarExtractor {
-    public static byte[] getBytes(String fullClassName, String jar) throws IOException {
+public class ClassFromJarExtractor {
+
+    public static boolean isClassInJar(String fullClassName, String jar, String ext) {
+        // ... inputs check omitted ...
+        try (JarFile jarFile = new JarFile(jar)) {
+            Enumeration<JarEntry> entries = jarFile.entries();
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                if (entry.getName().endsWith(ext)) {
+                    String qualiName = entry.getName().replaceAll("/", "\\.");
+                    if (qualiName.equalsIgnoreCase(fullClassName + "." +ext)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        catch (Exception e) {
+
+        }
+
+        return false;
+    }
+
+    public static byte[] getBytes(String fullClassName, String jar, String ext) throws IOException {
         // ... inputs check omitted ...
         try (JarFile jarFile = new JarFile(jar)) {
             Enumeration<JarEntry> entries = jarFile.entries();
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
 
-                if (entry.getName().endsWith(".class")) {
+                if (entry.getName().endsWith(ext)) {
 
                     String qualiName = entry.getName().replaceAll("/", "\\.");
-                    if (qualiName.equalsIgnoreCase(fullClassName)) {
+                    if (qualiName.equalsIgnoreCase(fullClassName + "." +ext)) {
                         try (InputStream inputStream = jarFile.getInputStream(entry)) {
                             return getBytes(inputStream);
                         } catch (IOException ioException) {
@@ -75,10 +99,22 @@ public class ClassBytesFromJarExtractor {
         return new String(hexChars);
     }
 
+    public static File writeBytesToFile(byte[] data) throws Exception{
+
+        File file = File.createTempFile("temp_jayce", "jayce");
+        file.deleteOnExit();
+
+        FileOutputStream fos = new FileOutputStream("pathname");
+        fos.write(data);
+        fos.close();
+
+        return file;
+    }
+
     public static void main(String[] args) {
         try {
             byte[] bytes = getBytes("jd.cli.AnalyzerPanel.class", System.getProperty("user.home") +
-                    "/Desktop/BytecodeViewer.jar");
+                    "/Desktop/BytecodeViewer.jar", "class");
             System.out.println(bytesToHex(bytes));
         } catch (IOException e) {
             e.printStackTrace();

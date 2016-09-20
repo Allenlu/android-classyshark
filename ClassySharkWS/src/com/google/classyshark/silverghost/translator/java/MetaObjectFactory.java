@@ -17,15 +17,14 @@
 package com.google.classyshark.silverghost.translator.java;
 
 import com.google.classyshark.silverghost.contentreader.dex.DexlibLoader;
+import com.google.classyshark.silverghost.translator.java.clazz.asm.ClassFromJarExtractor;
 import com.google.classyshark.silverghost.translator.java.clazz.asm.MetaObjectAsmClass;
 import com.google.classyshark.silverghost.translator.java.clazz.reflect.ClassUtils;
 import com.google.classyshark.silverghost.translator.java.clazz.reflect.MetaObjectClass;
 import com.google.classyshark.silverghost.translator.java.dex.DexlibAdapter;
 import com.google.classyshark.silverghost.translator.java.dex.MetaObjectDex;
 import com.google.classyshark.silverghost.translator.java.dex.Multidex;
-import org.jf.dexlib2.iface.ClassDef;
-import org.jf.dexlib2.iface.DexFile;
-
+import com.google.classyshark.silverghost.translator.java.jayce.MetaObjectJayce;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,6 +33,8 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import org.jf.dexlib2.iface.ClassDef;
+import org.jf.dexlib2.iface.DexFile;
 
 /**
  * Factory for creating meta-objects to represent Java's data
@@ -55,6 +56,8 @@ public class MetaObjectFactory {
             result = getMetaObjectFromApk(className, archiveFile);
         } else if (archiveFile.getName().toLowerCase().endsWith(".aar")) {
             result = getMetaObjectFromAar(className, archiveFile);
+        } else if (archiveFile.getName().toLowerCase().endsWith(".jayce")) {
+            result = new MetaObjectJayce(archiveFile);
         } else {
             result = new MetaObjectClass(Exception.class);
         }
@@ -93,6 +96,17 @@ public class MetaObjectFactory {
     }
 
     private static MetaObject getMetaObjectFromJar(String className, File archiveFile) {
+
+        if (isJayce(className, archiveFile)) {
+            try {
+                byte[] jayceArray = ClassFromJarExtractor.getBytes(className, archiveFile.getAbsolutePath(), "jayce");
+                File jayceFile = ClassFromJarExtractor.writeBytesToFile(jayceArray);
+                return new MetaObjectJayce(jayceFile);
+            } catch (Exception e) {
+                return new MetaObjectClass(Exception.class);
+            }
+        }
+
         MetaObject result = null;
         Class clazz;
         try {
@@ -161,6 +175,13 @@ public class MetaObjectFactory {
 
     private static MetaObject getMetaObjectFromClass(File archiveFile) {
         MetaObject result = new MetaObjectAsmClass(archiveFile);
+        return result;
+    }
+
+    private static boolean isJayce(String className, File archiveFile) {
+        boolean result =
+                ClassFromJarExtractor.isClassInJar(className,
+                        archiveFile.getAbsolutePath(), "jayce");
         return result;
     }
 }
